@@ -82,13 +82,14 @@ def eventsPanel(frame):
     data = response.json()
     inGameEvents = []
     banners = []
+    currentDate = datetime.now().replace(microsecond=0)
+
     for event in data:
 
-        currentDate = datetime.now().replace(microsecond=0)
+
         # currentDate = datetime.strptime("2022-09-02 10:00:00", "%Y-%m-%d %H:%M:%S")
-        if "start" in event and "end" in event and currentDate > datetime.strptime(event["start"],
-                                                                                   "%Y-%m-%d %H:%M:%S") - timedelta(
-            hours=7) and currentDate < datetime.strptime(event["end"], "%Y-%m-%d %H:%M:%S"):
+        if "start" in event and "end" in event and datetime.strptime(event["start"],"%Y-%m-%d %H:%M:%S")\
+                - timedelta(hours=7) < currentDate < datetime.strptime(event["end"], "%Y-%m-%d %H:%M:%S"):
             if event["type"] == "In-game":
                 inGameEvents.append(event)
             elif event["type"] == "Banner":
@@ -102,7 +103,7 @@ def eventsPanel(frame):
             try:
                 bannerImage = ImageTk.PhotoImage(
                     Image.open(io.BytesIO(urlopen(banners[0]["img"]).read())).resize((300, 148),
-                                                                                     Image.Resampling.LANCZOS))
+                                                                                     Image.LANCZOS))
                 bannerImageLabel = customtkinter.CTkLabel(bannerFrame, image=bannerImage, text="")
                 bannerImageLabel.image = bannerImage
                 bannerImageLabel.pack(pady=10, padx=10)
@@ -121,7 +122,7 @@ def eventsPanel(frame):
             bannerProgressbar.pack(ipadx=10, pady=2)
             bannerProgressbar.set((100 - percentage) / 100)
 
-            bannerTimer = customtkinter.CTkLabel(bannerFrame, text=remainingtime)
+            bannerTimer = customtkinter.CTkLabel(bannerFrame, text=str(remainingtime))
             bannerTimer.pack()
 
             root.after(1000, updateProgress, start, end, bannerProgressbar)  # updates the bar every hour
@@ -147,7 +148,7 @@ def eventsPanel(frame):
         bar = customtkinter.CTkProgressBar(eFrame, orientation='horizontal', mode='determinate', width=120)
         bar.pack(ipadx=10, pady=2)
         bar.set((100 - percentage) / 100)
-        timer = customtkinter.CTkLabel(eFrame, text=remainingtime)
+        timer = customtkinter.CTkLabel(eFrame, text=str(remainingtime))
         timer.pack(pady=(0, 5))
         print(event["name"])
 
@@ -155,7 +156,7 @@ def eventsPanel(frame):
         root.after(0, countdown, timer, end)  # updates timer every
 
     if len(banners) == 0 and len(inGameEvents) == 0:
-        img = Image.open("img\Qiqi.png").resize((200, 200), Image.Resampling.LANCZOS)
+        img = Image.open("img\Qiqi.png").resize((200, 200), Image.LANCZOS)
         ph = ImageTk.PhotoImage(img)
 
         qiqiImage = customtkinter.CTkLabel(frame, image=ph)
@@ -178,8 +179,7 @@ class HonkaiPanel(customtkinter.CTkFrame):
 
         # get image from url
         url = HonkaiWikiScraper.get_banner_image()
-        bannerImage2 = ImageTk.PhotoImage(
-            Image.open(io.BytesIO(urlopen(url).read())).resize((300, 148), Image.Resampling.LANCZOS))
+        bannerImage2 = ImageTk.PhotoImage(Image.open(io.BytesIO(urlopen(url).read())).resize((300, 148), Image.LANCZOS))
         bannerImageLabel2 = customtkinter.CTkLabel(bannerFrame, image=bannerImage2, text="")
         bannerImageLabel2.image = bannerImage2
         bannerImageLabel2.pack(pady=10, padx=10)
