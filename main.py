@@ -51,21 +51,20 @@ def set_appwindow():  # to display the window icon on the taskbar,
 
 def getPercetage(startDate, endDate):
     currentDate = datetime.now().replace(microsecond=0)
-    start = datetime.strptime(startDate, "%Y-%m-%d %H:%M:%S")
-    end = datetime.strptime(endDate, "%Y-%m-%d %H:%M:%S")
-    totalTime = end - start
-    remainingtime = end - currentDate
+
+    totalTime = endDate - startDate
+    remainingtime = endDate - currentDate
 
     percentage = (remainingtime.total_seconds() * 100) / totalTime.total_seconds()
 
     return percentage
 
 
-def updateProgress(event, bar):
-    percentage = getPercetage(event["start"], event["end"])
+def updateProgress(start,end, bar):
+    percentage = getPercetage(start, end)
     bar.set((100 - percentage) / 100)
     if bar.get() < 1:
-        root.after(3600000, updateProgress, event, bar)
+        root.after(3600000, updateProgress, start,end, bar)
 
 
 # updates the timer every second
@@ -123,7 +122,10 @@ def eventsPanel(frame):
 
             remainingtime = datetime.strptime(banners[0]["end"], "%Y-%m-%d %H:%M:%S") - currentDate
 
-            percentage = getPercetage(banners[0]["start"], banners[0]["end"])
+            start = datetime.strptime(banners[0]["start"], "%Y-%m-%d %H:%M:%S")
+            end = datetime.strptime(banners[0]["end"], "%Y-%m-%d %H:%M:%S")
+
+            percentage = getPercetage(start, end)
 
             print(percentage)
             bannerProgressbar = customtkinter.CTkProgressBar(bannerFrame, orientation='horizontal', mode='determinate')
@@ -133,7 +135,7 @@ def eventsPanel(frame):
             bannerTimer = customtkinter.CTkLabel(bannerFrame, text=remainingtime)
             bannerTimer.pack()
 
-            root.after(1000, updateProgress, banners[0], bannerProgressbar)  # updates the bar every hour
+            root.after(1000, updateProgress, start,end, bannerProgressbar)  # updates the bar every hour
             root.after(0, countdown, bannerTimer, banners[0]["end"])  # updates timer every second
     except:
         print("Error getting banner")
@@ -143,7 +145,10 @@ def eventsPanel(frame):
         eFrame = customtkinter.CTkFrame(frame, corner_radius=10)
         eFrame.pack(fill="x", pady=(10, 0))
 
-        percentage = getPercetage(event["start"], event["end"])
+        start = datetime.strptime(event["start"], "%Y-%m-%d %H:%M:%S")
+        end = datetime.strptime(event["end"], "%Y-%m-%d %H:%M:%S")
+
+        percentage = getPercetage(start, end)
         remainingtime = datetime.strptime(event["end"], "%Y-%m-%d %H:%M:%S") - currentDate
 
         customtkinter.CTkLabel(eFrame, text=event["name"].replace("Event", "").replace('"', "")).pack(pady=(5, 0))
@@ -155,7 +160,7 @@ def eventsPanel(frame):
         timer.pack(pady=(0, 5))
         print(event["name"])
 
-        root.after(1000, updateProgress, event, bar)  # updates the bar every hour
+        root.after(1000, updateProgress, start,end, bar)  # updates the bar every hour
         root.after(0, countdown, timer, event["end"])  # updates timer every
 
     if len(banners) == 0 and len(inGameEvents) == 0:
