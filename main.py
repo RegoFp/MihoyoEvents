@@ -78,13 +78,7 @@ def countdown(widget, endDate):
 
 # Returns the time in seconds until the event
 def secsUntil(date):
-    dateString = date.split(" ")[0]
-    hourString = date.split(" ")[1]
-    date = dateString.split("-")
-    hour = hourString.split(":")
-
-    daysUntil = datetime(int(date[0]), int(date[1]), int(date[2]), int(hour[0]), int(hour[1]),
-                         int(hour[2])) - datetime.now()
+    daysUntil = date - datetime.now()
     return int(daysUntil.total_seconds())
 
 
@@ -136,7 +130,7 @@ def eventsPanel(frame):
             bannerTimer.pack()
 
             root.after(1000, updateProgress, start,end, bannerProgressbar)  # updates the bar every hour
-            root.after(0, countdown, bannerTimer, banners[0]["end"])  # updates timer every second
+            root.after(0, countdown, bannerTimer, end)  # updates timer every second
     except:
         print("Error getting banner")
 
@@ -161,7 +155,7 @@ def eventsPanel(frame):
         print(event["name"])
 
         root.after(1000, updateProgress, start,end, bar)  # updates the bar every hour
-        root.after(0, countdown, timer, event["end"])  # updates timer every
+        root.after(0, countdown, timer, end)  # updates timer every
 
     if len(banners) == 0 and len(inGameEvents) == 0:
         img = Image.open("img\Qiqi.png").resize((200, 200), Image.Resampling.LANCZOS)
@@ -187,6 +181,20 @@ class HonkaiPanel(customtkinter.CTkFrame):
         currentDate = datetime.now().replace(microsecond=0)
 
         remainingtime = HonkaiWikiScraper.get_banner_end() - currentDate
+
+        percentage = getPercetage(HonkaiWikiScraper.get_banner_start(),HonkaiWikiScraper.get_banner_end())
+
+        bannerProgressbar = customtkinter.CTkProgressBar(self, orientation='horizontal', mode='determinate')
+        bannerProgressbar.pack(ipadx=10, pady=2)
+        bannerProgressbar.set((100 - percentage) / 100)
+
+        remainingtime = HonkaiWikiScraper.get_banner_end() - currentDate
+
+        bannerTimer = customtkinter.CTkLabel(self, text=remainingtime)
+        bannerTimer.pack()
+
+        root.after(1000, updateProgress, HonkaiWikiScraper.get_banner_start(), HonkaiWikiScraper.get_banner_end(), bannerProgressbar)  # updates the bar every hour
+        root.after(0, countdown, bannerTimer, HonkaiWikiScraper.get_banner_end())  # updates timer every second
 
         print(remainingtime)
 
