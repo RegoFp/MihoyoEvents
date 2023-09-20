@@ -3,7 +3,6 @@ from datetime import datetime
 from requests import get
 from bs4 import BeautifulSoup
 from dataclasses import dataclass
-import re
 
 URL = "https://honkai-star-rail.fandom.com/wiki/Honkai:_Star_Rail_Wiki"
 page = get(URL)
@@ -12,15 +11,16 @@ soup = BeautifulSoup(page.content, "html.parser")
 
 
 @dataclass
-class event:
+class Event:
     name: str
     start: datetime
     end: datetime
     img: str
 
 
-## BANNERS
+# BANNERS
 # find banner
+
 results = soup.find('div', {
     "class": "hidden wikia-gallery-position-center wikia-gallery-spacing-small wikia-gallery-border-none "
              "wikia-gallery-caption-size-large wikia-gallery wikia-gallery-caption-below wikia-gallery-position-left "
@@ -33,13 +33,11 @@ date = results.find("div", {"class": "lightbox-caption"})
 time = date.text.split("(")
 time = time[0].split("to")
 
-startFormat = "From %B %d, %Y"
-endFormat = "\xa0%B %d, %Y"
+start_format = "From %B %d, %Y"
+end_format = "\xa0%B %d, %Y"
 
-startDate = datetime.strptime(time[0], startFormat).replace(hour=13)
-endDate = datetime.strptime(time[1], endFormat).replace(hour=13)
-
-print(endDate)
+Start_date = datetime.strptime(time[0], start_format).replace(hour=13)
+End_date = datetime.strptime(time[1], end_format).replace(hour=13)
 
 # find image
 img = results.find("img")
@@ -51,44 +49,50 @@ imagenUrl = imagen[0]
 
 
 # Returns a list of the current events
-def getEvents():
+def get_events():
     events = soup.findAll('div', {
-        "class": "hidden wikia-gallery-position-center wikia-gallery-spacing-small wikia-gallery-border-none wikia-gallery-caption-size-large wikia-gallery wikia-gallery-caption-below wikia-gallery-position-left wikia-gallery-spacing-medium wikia-gallery-border-small wikia-gallery-captions-center wikia-gallery-caption-size-medium"})
+        "class": "hidden wikia-gallery-position-center wikia-gallery-spacing-small wikia-gallery-border-none "
+                 "wikia-gallery-caption-size-large wikia-gallery wikia-gallery-caption-below "
+                 "wikia-gallery-position-left wikia-gallery-spacing-medium wikia-gallery-border-small "
+                 "wikia-gallery-captions-center wikia-gallery-caption-size-medium"})
 
-    eventsList = []
+    events_list = []
 
+    # Every div is an event
     for div in events[1].findAll("div", style="width:225px"):
-        img = div.find("img").get("data-src").split("scale")[0]
 
+        # Gets the url of the image
+        event_img = div.find("img").get("data-src").split("scale")[0]
+
+        # Gets the name of the event
         name = div.find("div", {"class": "gallery-image-wrapper accent"}).find("a").get("title").split("/")[0]
 
-        date = div.find("div", {"class": "lightbox-caption"})
+        # Gets the start and finish date and formats it
+        event_date = div.find("div", {"class": "lightbox-caption"})
 
-        time1 = date.contents[0]
-        time2 = date.contents[2]
+        time1 = event_date.contents[0]
+        time2 = event_date.contents[2]
 
-        startFormat = "From %B %d, %Y"
-        endFormat = "to\xa0%B %d, %Y"
+        event_start_format = "From %B %d, %Y"
+        event_end_format = "to\xa0%B %d, %Y"
 
+        # If it has "since" it's a permanent event, no reason to add it
         if "since" in time1:
             print("permanent event")
         else:
-            thisone = event(
+            new_event = Event(
                 name,
-                datetime.strptime(time1, startFormat).replace(hour=13),
-                datetime.strptime(time2, endFormat).replace(hour=13),
-                img
+                datetime.strptime(str(time1), event_start_format).replace(hour=13),
+                datetime.strptime(str(time2), event_end_format).replace(hour=13),
+                event_img
             )
 
-            # doesnt add the battlepass and the trials
-            if thisone.name != "Nameless Honor":
-                if thisone.name != "Aptitude Showcase":
-                    eventsList.append(thisone)
+            # doesn't add the battle pass and the trials
+            if new_event.name != "Nameless Honor":
+                if new_event.name != "Aptitude Showcase":
+                    events_list.append(new_event)
 
-    return eventsList
-
-
-getEvents()
+    return events_list
 
 
 def get_banner_image():
@@ -96,8 +100,8 @@ def get_banner_image():
 
 
 def get_banner_start():
-    return startDate
+    return Start_date
 
 
 def get_banner_end():
-    return endDate
+    return End_date

@@ -27,218 +27,221 @@ root.configure(bg=bgColor)
 root.title("Abyss")
 
 
-def set_appwindow():  # to display the window icon on the taskbar,
+def set_app_window():
+    # to display the window icon on the taskbar,
     # even when using root.overrideredirect(True
     # Some WindowsOS styles, required for task bar integration
-    GWL_EXSTYLE = -20
-    WS_EX_APPWINDOW = 0x00040000
-    WS_EX_TOOLWINDOW = 0x00000080
-    # Magic
+    gwl_ex_style = -20
+    ws_ex_app_window = 0x00040000
+    ws_ex_tool_window = 0x00000080
+
     hwnd = windll.user32.GetParent(root.winfo_id())
-    stylew = windll.user32.GetWindowLongW(hwnd, GWL_EXSTYLE)
-    stylew = stylew & ~WS_EX_TOOLWINDOW
-    stylew = stylew | WS_EX_APPWINDOW
-    res = windll.user32.SetWindowLongW(hwnd, GWL_EXSTYLE, stylew)
+    style = windll.user32.GetWindowLongW(hwnd, gwl_ex_style)
+    style = style & ~ws_ex_tool_window
+    style | ws_ex_app_window
+
+    windll.user32.SetWindowLongW(hwnd, gwl_ex_style, style)
 
     root.wm_withdraw()
     root.after(10, lambda: root.wm_deiconify())
 
 
-def getPercetage(startDate, endDate):
-    currentDate = datetime.now().replace(microsecond=0)
+def get_percentage(start_date, end_date):
+    current_date = datetime.now().replace(microsecond=0)
 
-    totalTime = endDate - startDate
-    remainingtime = endDate - currentDate
+    total_time = end_date - start_date
+    remaining_time = end_date - current_date
 
-    percentage = (remainingtime.total_seconds() * 100) / totalTime.total_seconds()
+    percentage = (remaining_time.total_seconds() * 100) / total_time.total_seconds()
 
     return percentage
 
 
-def updateProgress(start, end, bar):
-    percentage = getPercetage(start, end)
-    bar.set((100 - percentage) / 100)
-    if bar.get() < 1:
-        root.after(3600000, updateProgress, start, end, bar)
+def update_progress(start, end, current_bar):
+    percentage = get_percentage(start, end)
+    current_bar.set((100 - percentage) / 100)
+    if current_bar.get() < 1:
+        root.after(3600000, update_progress, start, end, current_bar)
 
 
 # updates the timer every second
-def countdown(widget, endDate):
-    count = secsUntil(endDate)
+def countdown(widget, end_date):
+    count = get_secs_until(end_date)
     widget.configure(text=timedelta(seconds=count))
     if count > 0:
         # call countdown again after 1000ms (1s)
-        root.after(1000, countdown, widget, endDate)
+        root.after(1000, countdown, widget, end_date)
 
 
 # Returns the time in seconds until the event
-def secsUntil(date):
-    daysUntil = date - datetime.now()
-    return int(daysUntil.total_seconds())
+def get_secs_until(date):
+    days_until = date - datetime.now()
+    return int(days_until.total_seconds())
 
 
 def eventsPanel(frame):
     response = requests.get("https://raw.githubusercontent.com/Tibowl/HuTao/master/src/data/events.json")
     data = response.json()
-    inGameEvents = []
+    ingame_events = []
     banners = []
-    currentDate = datetime.now().replace(microsecond=0)
+    current_date = datetime.now().replace(microsecond=0)
 
     for event in data:
 
-
         # currentDate = datetime.strptime("2022-09-02 10:00:00", "%Y-%m-%d %H:%M:%S")
-        if "start" in event and "end" in event and datetime.strptime(event["start"],"%Y-%m-%d %H:%M:%S")\
-                - timedelta(hours=7) < currentDate < datetime.strptime(event["end"], "%Y-%m-%d %H:%M:%S"):
+        if "start" in event and "end" in event and datetime.strptime(event["start"], "%Y-%m-%d %H:%M:%S") \
+                - timedelta(hours=7) < current_date < datetime.strptime(event["end"], "%Y-%m-%d %H:%M:%S"):
             if event["type"] == "In-game":
-                inGameEvents.append(event)
+                ingame_events.append(event)
             elif event["type"] == "Banner":
                 banners.append(event)
 
     try:
         if len(banners) > 1:
-            bannerFrame = customtkinter.CTkFrame(frame, corner_radius=10)
-            bannerFrame.pack()
+            banner_frame = customtkinter.CTkFrame(frame, corner_radius=10)
+            banner_frame.pack()
 
             try:
-                bannerImage = ImageTk.PhotoImage(
+                banner_image = ImageTk.PhotoImage(
                     Image.open(io.BytesIO(urlopen(banners[0]["img"]).read())).resize((300, 148),
                                                                                      Image.LANCZOS))
-                bannerImageLabel = customtkinter.CTkLabel(bannerFrame, image=bannerImage, text="")
-                bannerImageLabel.image = bannerImage
-                bannerImageLabel.pack(pady=10, padx=10)
-            except:
+                banner_image_label = customtkinter.CTkLabel(banner_frame, image=banner_image, text="")
+                banner_image_label.image = banner_image
+                banner_image_label.pack(pady=10, padx=10)
+            except Exception:
                 print("Error getting image")
 
-            remainingtime = datetime.strptime(banners[0]["end"], "%Y-%m-%d %H:%M:%S") - currentDate
+            remaining_time = datetime.strptime(banners[0]["end"], "%Y-%m-%d %H:%M:%S") - current_date
 
             start = datetime.strptime(banners[0]["start"], "%Y-%m-%d %H:%M:%S")
             end = datetime.strptime(banners[0]["end"], "%Y-%m-%d %H:%M:%S")
 
-            percentage = getPercetage(start, end)
+            percentage = get_percentage(start, end)
 
-            print(percentage)
-            bannerProgressbar = customtkinter.CTkProgressBar(bannerFrame, orientation='horizontal', mode='determinate')
-            bannerProgressbar.pack(ipadx=10, pady=2)
-            bannerProgressbar.set((100 - percentage) / 100)
+            banner_progress_bar = customtkinter.CTkProgressBar(banner_frame, orientation='horizontal',
+                                                               mode='determinate')
+            banner_progress_bar.pack(ipadx=10, pady=2)
+            banner_progress_bar.set((100 - percentage) / 100)
 
-            bannerTimer = customtkinter.CTkLabel(bannerFrame, text=str(remainingtime))
-            bannerTimer.pack()
+            banner_timer = customtkinter.CTkLabel(banner_frame, text=str(remaining_time))
+            banner_timer.pack()
 
-            root.after(1000, updateProgress, start, end, bannerProgressbar)  # updates the bar every hour
-            root.after(0, countdown, bannerTimer, end)  # updates timer every second
-    except:
+            root.after(1000, update_progress, start, end, banner_progress_bar)  # updates the bar every hour
+            root.after(0, countdown, banner_timer, end)  # updates timer every second
+
+    except Exception:
         print("Error getting banner")
 
-    for event in inGameEvents:
+    for event in ingame_events:
         # ttk.Separator(frame,orient='horizontal',bg="gray").pack(fill="x",padx=10,pady=10)
-        eFrame = customtkinter.CTkFrame(frame, corner_radius=10)
-        eFrame.pack(fill="x", pady=(10, 0))
+        event_frame = customtkinter.CTkFrame(frame, corner_radius=10)
+        event_frame.pack(fill="x", pady=(10, 0))
 
         start = datetime.strptime(event["start"], "%Y-%m-%d %H:%M:%S")
         end = datetime.strptime(event["end"], "%Y-%m-%d %H:%M:%S")
 
-        percentage = getPercetage(start, end)
-        remainingtime = datetime.strptime(event["end"], "%Y-%m-%d %H:%M:%S") - currentDate
+        percentage = get_percentage(start, end)
+        remaining_time = datetime.strptime(event["end"], "%Y-%m-%d %H:%M:%S") - current_date
 
-        customtkinter.CTkLabel(eFrame,
+        customtkinter.CTkLabel(event_frame,
                                text=event["name"].replace("Event", "").replace('"', "").replace(":", ":\n")).pack(
             pady=(5, 0))
 
-        bar = customtkinter.CTkProgressBar(eFrame, orientation='horizontal', mode='determinate', width=120)
-        bar.pack(ipadx=10, pady=2)
-        bar.set((100 - percentage) / 100)
-        timer = customtkinter.CTkLabel(eFrame, text=str(remainingtime))
-        timer.pack(pady=(0, 5))
-        print(event["name"])
+        progress_bar = customtkinter.CTkProgressBar(event_frame, orientation='horizontal',
+                                                    mode='determinate', width=120)
+        progress_bar.pack(ipadx=10, pady=2)
+        progress_bar.set((100 - percentage) / 100)
 
-        root.after(1000, updateProgress, start, end, bar)  # updates the bar every hour
+        timer = customtkinter.CTkLabel(event_frame, text=str(remaining_time))
+        timer.pack(pady=(0, 5))
+
+        root.after(1000, update_progress, start, end, progress_bar)  # updates the bar every hour
         root.after(0, countdown, timer, end)  # updates timer every
 
-    if len(banners) == 0 and len(inGameEvents) == 0:
-        img = Image.open("img\Qiqi.png").resize((200, 200), Image.LANCZOS)
+    if len(banners) == 0 and len(ingame_events) == 0:
+        img = Image.open(r"img\Qiqi.png").resize((200, 200), Image.LANCZOS)
         ph = ImageTk.PhotoImage(img)
 
-        qiqiImage = customtkinter.CTkLabel(frame, image=ph)
-        qiqiImage.image = ph
-        qiqiImage.pack(pady=10, padx=10)
+        qiqi_image = customtkinter.CTkLabel(frame, image=ph)
+        qiqi_image.image = ph
+        qiqi_image.pack(pady=10, padx=10)
 
         tkinter.Label(frame, text="Nothing going on right now", bg=frameBgColor, fg="white").pack(pady=(0, 10))
 
 
 class HonkaiPanel(customtkinter.CTkFrame):
-    def __init__(self, parent, bg="#a6a6a6"):
+    def __init__(self, parent):
         customtkinter.CTkFrame.__init__(self, parent)
 
         # changes background color
         self.configure(fg_color=(bgColor, bgColor))
 
         # creates a frame for the banner
-        bannerFrame = customtkinter.CTkFrame(self, corner_radius=10)
-        bannerFrame.pack()
+        banner_frame = customtkinter.CTkFrame(self, corner_radius=10)
+        banner_frame.pack()
 
         # get image from url
         url = HonkaiWikiScraper.get_banner_image()
-        bannerImage2 = ImageTk.PhotoImage(Image.open(io.BytesIO(urlopen(url).read())).resize((300, 148), Image.LANCZOS))
-        bannerImageLabel2 = customtkinter.CTkLabel(bannerFrame, image=bannerImage2, text="")
-        bannerImageLabel2.image = bannerImage2
-        bannerImageLabel2.pack(pady=10, padx=10)
+        banner_image = ImageTk.PhotoImage(Image.open(io.BytesIO(urlopen(url).read())).resize((300, 148), Image.LANCZOS))
+        banner_image_label = customtkinter.CTkLabel(banner_frame, image=banner_image, text="")
+        banner_image_label.image = banner_image
+        banner_image_label.pack(pady=10, padx=10)
 
         # gets remaining banner time in %
-        currentDate = datetime.now().replace(microsecond=0)
-        remainingtime = HonkaiWikiScraper.get_banner_end() - currentDate
-        percentage = getPercetage(HonkaiWikiScraper.get_banner_start(), HonkaiWikiScraper.get_banner_end())
+        current_date = datetime.now().replace(microsecond=0)
+        percentage = get_percentage(HonkaiWikiScraper.get_banner_start(), HonkaiWikiScraper.get_banner_end())
 
         # creates the progress bar
-        bannerProgressbar = customtkinter.CTkProgressBar(bannerFrame, orientation='horizontal', mode='determinate')
-        bannerProgressbar.pack(ipadx=10, pady=2)
-        bannerProgressbar.set((100 - percentage) / 100)
+        banner_progress_bar = customtkinter.CTkProgressBar(banner_frame, orientation='horizontal', mode='determinate')
+        banner_progress_bar.pack(ipadx=10, pady=2)
+        banner_progress_bar.set((100 - percentage) / 100)
 
-        remainingtime = HonkaiWikiScraper.get_banner_end() - currentDate
+        remaining_time = HonkaiWikiScraper.get_banner_end() - current_date
 
         # adds the remaining time in text
-        bannerTimer = customtkinter.CTkLabel(bannerFrame, text=remainingtime)
-        bannerTimer.pack()
+        banner_timer = customtkinter.CTkLabel(banner_frame, text=remaining_time)
+        banner_timer.pack()
 
-        root.after(1000, updateProgress, HonkaiWikiScraper.get_banner_start(), HonkaiWikiScraper.get_banner_end(),
-                   bannerProgressbar)  # updates the bar every hour
-        root.after(0, countdown, bannerTimer, HonkaiWikiScraper.get_banner_end())  # updates timer every second
+        root.after(1000, update_progress, HonkaiWikiScraper.get_banner_start(), HonkaiWikiScraper.get_banner_end(),
+                   banner_progress_bar)  # updates the bar every hour
+        root.after(0, countdown, banner_timer, HonkaiWikiScraper.get_banner_end())  # updates timer every second
 
         # gets list of the current events
-        events = HonkaiWikiScraper.getEvents()
+        events = HonkaiWikiScraper.get_events()
 
         for event in events:
             # creates frames for event
-            eFrame = customtkinter.CTkFrame(self, corner_radius=10)
-            eFrame.pack(fill="x", pady=(10, 0))
+            event_frame = customtkinter.CTkFrame(self, corner_radius=10)
+            event_frame.pack(fill="x", pady=(10, 0))
 
             start = event.start
             end = event.end
 
             # adds event name
-            customtkinter.CTkLabel(eFrame, text=event.name).pack(pady=(5, 0))
+            customtkinter.CTkLabel(event_frame, text=event.name).pack(pady=(5, 0))
 
             # gets remaining time in %
-            percentage = getPercetage(start, end)
+            percentage = get_percentage(start, end)
 
             # adds the progress bar
-            bar = customtkinter.CTkProgressBar(eFrame, orientation='horizontal', mode='determinate', width=120)
-            bar.pack(ipadx=10, pady=2)
-            bar.set((100 - percentage) / 100)
+            progress_bar = customtkinter.CTkProgressBar(event_frame, orientation='horizontal',
+                                                        mode='determinate', width=120)
+            progress_bar.pack(ipadx=10, pady=2)
+            progress_bar.set((100 - percentage) / 100)
 
             # adds the remaining time
-            remainingtime = end - currentDate
-            timer = customtkinter.CTkLabel(eFrame, text=remainingtime)
+            remaining_time = end - current_date
+            timer = customtkinter.CTkLabel(event_frame, text=remaining_time)
             timer.pack(pady=(0, 5))
 
-            root.after(1000, updateProgress, start, end, bar)  # updates the bar every hour
+            root.after(1000, update_progress, start, end, progress_bar)  # updates the bar every hour
             root.after(0, countdown, timer, end)  # updates timer every second
 
 
 root.overrideredirect(True)
 
-topbar = bar
-topbar.Bar(root).pack(fill="x")
+top_bar = bar
+top_bar.Bar(root).pack(fill="x")
 
 mainWindow = tkinter.Frame(bg=bgColor)
 mainWindow.pack(pady=(10, 10))
@@ -251,7 +254,7 @@ eventFrame.grid(column=0, row=0, padx=(10, 5), sticky="n")
 ventFrame = HonkaiPanel(mainWindow)
 ventFrame.grid(column=1, row=0, padx=(10, 5), sticky="n")
 
-root.after(10, set_appwindow)  # Show the windows bar icon
+root.after(10, set_app_window)  # Show the windows bar icon
 
 root.mainloop()
 
