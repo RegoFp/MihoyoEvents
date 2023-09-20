@@ -192,7 +192,7 @@ class ProtoBar(tk.Frame):
         topbarTitle.bind('<Button-1>', get_pos)
 
 
-####Only for testing --------------------------
+# Creates an empty window for testing
 class MyApplication(tk.Tk):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
