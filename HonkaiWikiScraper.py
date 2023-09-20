@@ -5,9 +5,13 @@ from bs4 import BeautifulSoup
 from dataclasses import dataclass
 
 URL = "https://honkai-star-rail.fandom.com/wiki/Honkai:_Star_Rail_Wiki"
-page = get(URL)
 
-soup = BeautifulSoup(page.content, "html.parser")
+
+def download_data():
+    page = get(URL)
+    soup = BeautifulSoup(page.content, "html.parser")
+
+    return soup
 
 
 @dataclass
@@ -18,39 +22,56 @@ class Event:
     img: str
 
 
-# BANNERS
-# find banner
+@dataclass
+class Banner:
+    img: str
+    start: datetime
+    end: datetime
 
-results = soup.find('div', {
-    "class": "hidden wikia-gallery-position-center wikia-gallery-spacing-small wikia-gallery-border-none "
-             "wikia-gallery-caption-size-large wikia-gallery wikia-gallery-caption-below wikia-gallery-position-left "
-             "wikia-gallery-spacing-medium wikia-gallery-border-small wikia-gallery-captions-center "
-             "wikia-gallery-caption-size-medium"})
 
-# get texts
-date = results.find("div", {"class": "lightbox-caption"})
+# Returns the current banner
+def get_banner():
+    data = download_data()
 
-time = date.text.split("(")
-time = time[0].split("to")
+    results = data.find('div', {
+        "class": "hidden wikia-gallery-position-center wikia-gallery-spacing-small wikia-gallery-border-none "
+                 "wikia-gallery-caption-size-large wikia-gallery wikia-gallery-caption-below "
+                 "wikia-gallery-position-left "
+                 "wikia-gallery-spacing-medium wikia-gallery-border-small wikia-gallery-captions-center "
+                 "wikia-gallery-caption-size-medium"})
 
-start_format = "From %B %d, %Y"
-end_format = "\xa0%B %d, %Y"
+    # get start and finish date
+    date = results.find("div", {"class": "lightbox-caption"})
 
-Start_date = datetime.strptime(time[0], start_format).replace(hour=13)
-End_date = datetime.strptime(time[1], end_format).replace(hour=13)
+    time = date.text.split("(")
+    time = time[0].split("to")
 
-# find image
-img = results.find("img")
-src = img.get("data-src")
+    start_format = "From %B %d, %Y"
+    end_format = "\xa0%B %d, %Y"
 
-# '2023-09-26 14:59:00'
-imagen = src.split("scale")
-imagenUrl = imagen[0]
+    start_date = datetime.strptime(time[0], start_format).replace(hour=13)
+    end_date = datetime.strptime(time[1], end_format).replace(hour=13)
+
+    # find image
+    img = results.find("img")
+    src = img.get("data-src")
+    imagen = src.split("scale")
+    imagen_url = imagen[0]
+
+    banner = Banner(
+        imagen_url,
+        start_date,
+        end_date
+    )
+
+    return banner
 
 
 # Returns a list of the current events
 def get_events():
-    events = soup.findAll('div', {
+    data = download_data()
+
+    events = data.findAll('div', {
         "class": "hidden wikia-gallery-position-center wikia-gallery-spacing-small wikia-gallery-border-none "
                  "wikia-gallery-caption-size-large wikia-gallery wikia-gallery-caption-below "
                  "wikia-gallery-position-left wikia-gallery-spacing-medium wikia-gallery-border-small "
@@ -93,15 +114,3 @@ def get_events():
                     events_list.append(new_event)
 
     return events_list
-
-
-def get_banner_image():
-    return imagenUrl
-
-
-def get_banner_start():
-    return Start_date
-
-
-def get_banner_end():
-    return End_date

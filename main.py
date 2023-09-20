@@ -180,8 +180,10 @@ class HonkaiPanel(customtkinter.CTkFrame):
         banner_frame = customtkinter.CTkFrame(self, corner_radius=10)
         banner_frame.pack()
 
+        banner = HonkaiWikiScraper.get_banner()
+
         # get image from url
-        url = HonkaiWikiScraper.get_banner_image()
+        url = banner.img
         banner_image = ImageTk.PhotoImage(Image.open(io.BytesIO(urlopen(url).read())).resize((300, 148), Image.LANCZOS))
         banner_image_label = customtkinter.CTkLabel(banner_frame, image=banner_image, text="")
         banner_image_label.image = banner_image
@@ -189,22 +191,22 @@ class HonkaiPanel(customtkinter.CTkFrame):
 
         # gets remaining banner time in %
         current_date = datetime.now().replace(microsecond=0)
-        percentage = get_percentage(HonkaiWikiScraper.get_banner_start(), HonkaiWikiScraper.get_banner_end())
+        percentage = get_percentage(banner.start, banner.end)
 
         # creates the progress bar
         banner_progress_bar = customtkinter.CTkProgressBar(banner_frame, orientation='horizontal', mode='determinate')
         banner_progress_bar.pack(ipadx=10, pady=2)
         banner_progress_bar.set((100 - percentage) / 100)
 
-        remaining_time = HonkaiWikiScraper.get_banner_end() - current_date
+        remaining_time = banner.end - current_date
 
         # adds the remaining time in text
         banner_timer = customtkinter.CTkLabel(banner_frame, text=remaining_time)
         banner_timer.pack()
 
-        root.after(1000, update_progress, HonkaiWikiScraper.get_banner_start(), HonkaiWikiScraper.get_banner_end(),
+        root.after(1000, update_progress, banner.start, banner.end,
                    banner_progress_bar)  # updates the bar every hour
-        root.after(0, countdown, banner_timer, HonkaiWikiScraper.get_banner_end())  # updates timer every second
+        root.after(0, countdown, banner_timer, banner.end)  # updates timer every second
 
         # gets list of the current events
         events = HonkaiWikiScraper.get_events()
