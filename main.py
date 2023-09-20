@@ -26,6 +26,10 @@ root.configure(bg=bgColor)
 root.title("Abyss")
 
 
+# TODO If there is no current banner, it will probably explode
+# TODO Maybe switch from the hu tao bot json and scrap my own data for genshin too
+# TODO make it appear in the bottom tight
+
 def set_app_window():
     # to display the window icon on the taskbar,
     # even when using root.overrideredirect(True
@@ -266,7 +270,8 @@ eventFrame.grid(column=0, row=0, padx=(10, 5), sticky="n")
 ventFrame = HonkaiPanel(mainWindow)
 ventFrame.grid(column=1, row=0, padx=(10, 5), sticky="n")
 
-root.after(10, set_app_window)  # Show the windows bar icon
+# Show the windows bar icon
+root.after(10, set_app_window)
 
 # Start
 root.mainloop()
