@@ -30,6 +30,33 @@ root.title("Abyss")
 # TODO Maybe switch from the hu tao bot json and scrap my own data for genshin too
 # TODO make it appear in the bottom tight
 
+def update_window_position():
+    # update is not the best way of doing this
+    root.update()
+    height = windll.user32.GetSystemMetrics(1) - root.winfo_height() - 70
+    position = windll.user32.GetSystemMetrics(0) - root.winfo_width() - 30
+    print(height)
+    print(position)
+
+    root.geometry("+" + str(position) + "+" + str(height))
+
+
+def reset_frames(genshin, honkai):
+    honkai.forget()
+    honkai.destroy()
+
+    genshin.forget()
+    honkai.destroy()
+
+    # Adds the genshin panel
+    event_frame = GenshinPanel(mainWindow)
+    event_frame.grid(column=0, row=0, padx=(10, 5), sticky="n")
+
+    # Adds the Honkai panel
+    vent_frame = HonkaiPanel(mainWindow)
+    vent_frame.grid(column=1, row=0, padx=(10, 5), sticky="n")
+
+
 def set_app_window():
     # to display the window icon on the taskbar,
     # even when using root.overrideredirect(True
@@ -70,16 +97,53 @@ def update_progress(start, end, current_bar):
 # updates the timer every second
 def countdown(widget, end_date):
     count = get_secs_until(end_date)
-    widget.configure(text=timedelta(seconds=count))
-    if count > 0:
-        # call countdown again after 1000ms (1s)
-        root.after(1000, countdown, widget, end_date)
+
+    if count == 0:
+        reset_frames(eventFrame, ventFrame)
+    # Checks that the widget was not destroyed before trying to update it
+    if widget.winfo_exists():
+        widget.configure(text=timedelta(seconds=count))
+        if count > 0:
+            # call countdown again after 1000ms (1s)
+            root.after(1000, countdown, widget, end_date)
 
 
 # Returns the time in seconds until the event
 def get_secs_until(date):
     days_until = date - datetime.now()
     return int(days_until.total_seconds())
+
+
+class EventFrame(customtkinter.CTkFrame):
+    def __init__(self, parent, event):
+        customtkinter.CTkFrame.__init__(self, parent)
+
+        self.configure(corner_radius=10)
+
+        current_date = datetime.now().replace(microsecond=0)
+
+        start = event.start
+        end = event.end
+
+        # adds event name
+        customtkinter.CTkLabel(self, text=event.name).pack(pady=(5, 0))
+
+        # gets remaining time in %
+        percentage = get_percentage(start, end)
+
+        # adds the progress bar
+        progress_bar = customtkinter.CTkProgressBar(self, orientation='horizontal',
+                                                    mode='determinate', width=120)
+        progress_bar.pack(ipadx=10, pady=2)
+        progress_bar.set((100 - percentage) / 100)
+
+        # adds the remaining time
+        remaining_time = end - current_date
+        timer = customtkinter.CTkLabel(self, text=remaining_time)
+        timer.pack(pady=(0, 5))
+
+        root.after(1000, update_progress, start, end, progress_bar)  # updates the bar every hour
+        root.after(0, countdown, timer, end)  # updates timer every second
 
 
 class GenshinPanel(customtkinter.CTkFrame):
@@ -218,37 +282,13 @@ class HonkaiPanel(customtkinter.CTkFrame):
         root.after(1000, update_progress, banner.start, banner.end,
                    banner_progress_bar)  # updates the bar every hour
         root.after(0, countdown, banner_timer, banner.end)  # updates timer every second
-
         # gets list of the current events
         events = HonkaiWikiScraper.get_events()
 
         for event in events:
             # creates frames for event
-            event_frame = customtkinter.CTkFrame(self, corner_radius=10)
+            event_frame = EventFrame(self, event)
             event_frame.pack(fill="x", pady=(10, 0))
-
-            start = event.start
-            end = event.end
-
-            # adds event name
-            customtkinter.CTkLabel(event_frame, text=event.name).pack(pady=(5, 0))
-
-            # gets remaining time in %
-            percentage = get_percentage(start, end)
-
-            # adds the progress bar
-            progress_bar = customtkinter.CTkProgressBar(event_frame, orientation='horizontal',
-                                                        mode='determinate', width=120)
-            progress_bar.pack(ipadx=10, pady=2)
-            progress_bar.set((100 - percentage) / 100)
-
-            # adds the remaining time
-            remaining_time = end - current_date
-            timer = customtkinter.CTkLabel(event_frame, text=remaining_time)
-            timer.pack(pady=(0, 5))
-
-            root.after(1000, update_progress, start, end, progress_bar)  # updates the bar every hour
-            root.after(0, countdown, timer, end)  # updates timer every second
 
 
 # Removes the top bar and the icon in the task bar
@@ -268,10 +308,15 @@ eventFrame.grid(column=0, row=0, padx=(10, 5), sticky="n")
 
 # Adds the Honkai panel
 ventFrame = HonkaiPanel(mainWindow)
-ventFrame.grid(column=1, row=0, padx=(10, 5), sticky="n")
+ventFrame.grid(column=1, row=0, padx=(5, 10), sticky="n")
+
+reloadButton = top_bar.get_returnButton()
+reloadButton["command"] = lambda genshin=eventFrame, honkai=ventFrame: reset_frames(genshin, honkai)
 
 # Show the windows bar icon
 root.after(10, set_app_window)
+
+update_window_position()
 
 # Start
 root.mainloop()

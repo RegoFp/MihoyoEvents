@@ -43,14 +43,14 @@ def get_banner():
     # get start and finish date
     date = results.find("div", {"class": "lightbox-caption"})
 
-    time = date.text.split("(")
-    time = time[0].split("to")
+    time1 = date.contents[0]
+    time2 = date.contents[2]
 
     start_format = "From %B %d, %Y"
-    end_format = "\xa0%B %d, %Y"
+    end_format = "to\xa0%B %d, %Y"
 
-    start_date = datetime.strptime(time[0], start_format).replace(hour=13)
-    end_date = datetime.strptime(time[1], end_format).replace(hour=13)
+    start_date = datetime.strptime(time1, start_format).replace(hour=12)
+    end_date = datetime.strptime(time2, end_format).replace(hour=15)
 
     # find image
     img = results.find("img")
@@ -103,8 +103,9 @@ def get_events():
         else:
             new_event = Event(
                 name,
-                datetime.strptime(str(time1), event_start_format).replace(hour=13),
-                datetime.strptime(str(time2), event_end_format).replace(hour=13),
+                # It's 4 am, but we live in Spain, so +1, obv this sucks
+                datetime.strptime(str(time1), event_start_format).replace(hour=5),
+                datetime.strptime(str(time2), event_end_format).replace(hour=5),
                 event_img
             )
 
