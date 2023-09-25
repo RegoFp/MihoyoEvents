@@ -129,11 +129,10 @@ def get_percentage(start_date, end_date):
 
 
 def update_progress(start, end, current_bar):
-
     percentage = get_percentage(start, end)
 
     current_bar.set((100 - percentage) / 100)
-    print(str((100 - percentage) / 100) +" percentage")
+    print(str((100 - percentage) / 100) + " percentage")
     if current_bar.get() < 1:
         root.after(3600000, update_progress, start, end, current_bar)
 
@@ -208,7 +207,7 @@ class GenshinPanel(customtkinter.CTkFrame):
 
         for event in data:
 
-            # currentDate = datetime.strptime("2022-09-02 10:00:00", "%Y-%m-%d %H:%M:%S")
+
             if "start" in event and "end" in event and datetime.strptime(event["start"], "%Y-%m-%d %H:%M:%S") \
                     - timedelta(hours=7) < current_date < datetime.strptime(event["end"], "%Y-%m-%d %H:%M:%S"):
                 if event["type"] == "In-game":
@@ -263,14 +262,15 @@ class GenshinPanel(customtkinter.CTkFrame):
             else:
                 banner_frame = customtkinter.CTkFrame(self, corner_radius=10)
 
-                img = Image.open("img\Sunday.png").resize((200, 200), Image.Resampling.LANCZOS)
+                img = Image.open(r"img\Sunday.png").resize((200, 200), Image.LANCZOS)
                 ph = ImageTk.PhotoImage(img)
 
-                qiqiImage = customtkinter.CTkLabel(banner_frame, image=ph,text="")
-                qiqiImage.image = ph
-                qiqiImage.pack(pady=10, padx=10)
+                banner_image = customtkinter.CTkLabel(banner_frame, image=ph, text="")
+                banner_image.image = ph
+                banner_image.pack(pady=10, padx=10)
 
-                tkinter.Label(banner_frame, text="Nothing going on right now", bg=frameBgColor, fg="white").pack(pady=(0, 10))
+                tkinter.Label(banner_frame, text="Nothing going on right now", bg=frameBgColor, fg="white").pack(
+                    pady=(0, 10))
 
                 banner_frame.pack()
 
@@ -278,7 +278,7 @@ class GenshinPanel(customtkinter.CTkFrame):
             print("Error getting banner")
 
         for event in in_game_events:
-            # ttk.Separator(frame,orient='horizontal',bg="gray").pack(fill="x",padx=10,pady=10)
+
             event_frame = customtkinter.CTkFrame(self, corner_radius=10)
             event_frame.pack(fill="x", pady=(10, 0))
 
@@ -311,11 +311,11 @@ class GenshinPanel(customtkinter.CTkFrame):
 
         if len(banners) == 0 and len(in_game_events) == 0:
             img = Image.open(r"img\Qiqi.png").resize((200, 200), Image.LANCZOS)
-            ph = ImageTk.PhotoImage(img)
+            tk_image = ImageTk.PhotoImage(img)
 
-            qiqi_image = customtkinter.CTkLabel(self, image=ph)
-            qiqi_image.image = ph
-            qiqi_image.pack(pady=10, padx=10)
+            nothing_image = customtkinter.CTkLabel(self, image=tk_image)
+            nothing_image.image = tk_image
+            nothing_image.pack(pady=10, padx=10)
 
             tkinter.Label(self, text="Nothing going on right now", bg=frameBgColor, fg="white").pack(pady=(0, 10))
 
@@ -341,6 +341,7 @@ class HonkaiPanel(customtkinter.CTkFrame):
         banner_image_label.image = banner_image
         banner_image_label.pack(pady=10, padx=10)
 
+        # changes the color of the background to the dominant one in the image
         hex_color = get_color_from_image(io.BytesIO(urlopen(url).read()))
         banner_frame.configure(fg_color=(hex_color, hex_color))
         progress_bar_hex_color = change_color_lightness(hex_color, 50, 50)
@@ -356,15 +357,14 @@ class HonkaiPanel(customtkinter.CTkFrame):
         banner_progress_bar.pack(ipadx=10, pady=2)
         banner_progress_bar.set((100 - percentage) / 100)
 
-        remaining_time = banner.end - current_date
-
         # adds the remaining time in text
+        remaining_time = banner.end - current_date
         banner_timer = customtkinter.CTkLabel(banner_frame, text=remaining_time)
         banner_timer.pack()
 
-        root.after(1000, update_progress, banner.start, banner.end,
-                   banner_progress_bar)  # updates the bar every hour
-        root.after(0, countdown, banner_timer, banner.end)  # updates timer every second
+        # updates the bar every hour and every second
+        root.after(1000, update_progress, banner.start, banner.end, banner_progress_bar)
+        root.after(0, countdown, banner_timer, banner.end)
 
         # gets list of the current events
         events = HonkaiWikiScraper.get_events()
