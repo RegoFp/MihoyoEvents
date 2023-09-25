@@ -1,8 +1,13 @@
+import re
 from datetime import datetime
+import cProfile
 
 from requests import get
 from bs4 import BeautifulSoup
 from dataclasses import dataclass
+
+import time
+import numpy as np
 
 URL = "https://honkai-star-rail.fandom.com/wiki/Honkai:_Star_Rail_Wiki"
 
@@ -43,14 +48,9 @@ def get_banner():
     # get start and finish date
     date = results.find("div", {"class": "lightbox-caption"})
 
-    time1 = date.contents[0]
-    time2 = date.contents[2]
-
-    start_format = "From %B %d, %Y"
-    end_format = "to\xa0%B %d, %Y"
-
-    start_date = datetime.strptime(time1, start_format).replace(hour=12)
-    end_date = datetime.strptime(time2, end_format).replace(hour=15)
+    # Gets the date from the inside url
+    url = results.find("div", {"class": "gallery-image-wrapper accent"}).find("a").get("href")
+    dates = get_exact_date(url)
 
     # find image
     img = results.find("img")
@@ -60,8 +60,8 @@ def get_banner():
 
     banner = Banner(
         imagen_url,
-        start_date,
-        end_date
+        dates[0],
+        dates[1]
     )
 
     return banner
@@ -88,34 +88,46 @@ def get_events():
         # Gets the name of the event
         name = div.find("div", {"class": "gallery-image-wrapper accent"}).find("a").get("title").split("/")[0]
 
-        # Gets the start and finish date and formats it
-        event_date = div.find("div", {"class": "lightbox-caption"})
+        # Gets the date from the inside url
+        url = div.find("div", {"class": "gallery-image-wrapper accent"}).find("a").get("href")
+        dates = get_exact_date(url)
 
-        time1 = event_date.contents[0]
-        time2 = event_date.contents[2]
+        new_event = Event(
+            name,
+            dates[0],
+            dates[1],
+            event_img
+        )
 
-        event_start_format = "From %B %d, %Y"
-        event_end_format = "to\xa0%B %d, %Y"
-
-        # If it has "since" it's a permanent event, no reason to add it
-        if "since" in time1:
-            print("permanent event")
-        else:
-            new_event = Event(
-                name,
-                # It's 4 am, but we live in Spain, so +1, obv this sucks
-                datetime.strptime(str(time1), event_start_format).replace(hour=5),
-                datetime.strptime(str(time2), event_end_format).replace(hour=5),
-                event_img
-            )
-
-            # doesn't add the battle pass and the trials
-            if new_event.name != "Nameless Honor":
-                if new_event.name != "Aptitude Showcase":
-                    events_list.append(new_event)
+        # doesn't add the battle pass and the trials
+        if new_event.name != "Nameless Honor":
+            if new_event.name != "Aptitude Showcase":
+                events_list.append(new_event)
 
     return events_list
 
-def get_exact_date(url):
 
-    return urls
+def get_exact_date(url):
+    times = []
+    time_format = "%d %B, %Y %H:%M"
+
+    url = "https://honkai-star-rail.fandom.com" + url
+
+    page = get(url)
+    soup = BeautifulSoup(page.content, "html.parser")
+
+    data = soup.findAll('section', {
+        "class": "pi-item pi-group pi-border-color"})
+
+    dates = data[0].findAll("td")
+
+    for d in dates:
+
+        pattern = r"\d{1,2} \w+, \d{4} \d{2}:\d{2}"
+        match = re.search(pattern, d.contents[1])
+
+        if match:
+            dt = datetime.strptime(match.group(), time_format)
+            times.append(dt)
+
+    return times

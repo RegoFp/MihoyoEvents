@@ -260,6 +260,19 @@ class GenshinPanel(customtkinter.CTkFrame):
 
                 root.after(1000, update_progress, start, end, banner_progress_bar)  # updates the bar every hour
                 root.after(0, countdown, banner_timer, end)  # updates timer every second
+            else:
+                banner_frame = customtkinter.CTkFrame(self, corner_radius=10)
+
+                img = Image.open("img\Sunday.png").resize((200, 200), Image.Resampling.LANCZOS)
+                ph = ImageTk.PhotoImage(img)
+
+                qiqiImage = customtkinter.CTkLabel(banner_frame, image=ph,text="")
+                qiqiImage.image = ph
+                qiqiImage.pack(pady=10, padx=10)
+
+                tkinter.Label(banner_frame, text="Nothing going on right now", bg=frameBgColor, fg="white").pack(pady=(0, 10))
+
+                banner_frame.pack()
 
         except Exception:
             print("Error getting banner")
