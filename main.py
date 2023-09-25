@@ -1,4 +1,5 @@
 # This is a sample Python script.
+import colorsys
 import datetime
 import io
 import tkinter
@@ -11,6 +12,8 @@ from PIL import ImageTk, Image
 from datetime import timedelta, datetime
 
 from ctypes import windll
+
+from colorthief import ColorThief
 
 import bar
 
@@ -26,9 +29,47 @@ root.configure(bg=bgColor)
 root.title("Abyss")
 
 
-# TODO If there is no current banner, it will probably explode
 # TODO Maybe switch from the hu tao bot json and scrap my own data for genshin too
-# TODO make it appear in the bottom tight
+
+
+def change_color_lightness(hex_color, lightness, saturation):
+    """
+    Receives a hex color, changes its saturation and lightness, then returns it
+    :param str hex_color:
+    :param int lightness:
+    :param int saturation:
+    :return str:
+    """
+
+    lightness = lightness / 100
+    saturation = saturation / 100
+
+    hex_color = hex_color.lstrip('#')
+
+    r, g, b = tuple(int(hex_color[i:i + 2], 16) for i in (0, 2, 4))
+    h, l, s = colorsys.rgb_to_hls(r, g, b)
+
+    r, g, b = colorsys.hls_to_rgb(h, lightness, saturation)
+    r, g, b = [x * 255.0 for x in (r, g, b)]
+    hex_color = '#%02x%02x%02x' % (int(r), int(g), int(b))
+
+    return hex_color
+
+
+def get_color_from_image(image):
+    # get the dominant color
+    color_thief = ColorThief(image)
+    dominant_color = color_thief.get_color(quality=50)
+
+    # Convert it to HLS
+    h, l, s = colorsys.rgb_to_hls(dominant_color[0], dominant_color[1], dominant_color[2])
+
+    # Convert it to hex
+    r, g, b = colorsys.hls_to_rgb(h, 50, s)
+    hex_color = '#%02x%02x%02x' % (int(r), int(g), int(b))
+
+    return hex_color
+
 
 def update_window_position():
     # update is not the best way of doing this
@@ -54,7 +95,7 @@ def reset_frames(genshin, honkai):
 
     # Adds the Honkai panel
     vent_frame = HonkaiPanel(mainWindow)
-    vent_frame.grid(column=1, row=0, padx=(10, 5), sticky="n")
+    vent_frame.grid(column=1, row=0, padx=(5, 10), sticky="n")
 
 
 def set_app_window():
@@ -88,8 +129,11 @@ def get_percentage(start_date, end_date):
 
 
 def update_progress(start, end, current_bar):
+
     percentage = get_percentage(start, end)
+
     current_bar.set((100 - percentage) / 100)
+    print(str((100 - percentage) / 100) +" percentage")
     if current_bar.get() < 1:
         root.after(3600000, update_progress, start, end, current_bar)
 
@@ -115,7 +159,7 @@ def get_secs_until(date):
 
 
 class EventFrame(customtkinter.CTkFrame):
-    def __init__(self, parent, event):
+    def __init__(self, parent, event, color):
         customtkinter.CTkFrame.__init__(self, parent)
 
         self.configure(corner_radius=10)
@@ -133,7 +177,9 @@ class EventFrame(customtkinter.CTkFrame):
 
         # adds the progress bar
         progress_bar = customtkinter.CTkProgressBar(self, orientation='horizontal',
-                                                    mode='determinate', width=120)
+                                                    mode='determinate', width=120,
+                                                    progress_color=color,
+                                                    fg_color=change_color_lightness(color, 12, 60))
         progress_bar.pack(ipadx=10, pady=2)
         progress_bar.set((100 - percentage) / 100)
 
@@ -170,18 +216,27 @@ class GenshinPanel(customtkinter.CTkFrame):
                 elif event["type"] == "Banner":
                     banners.append(event)
 
+        hex_color = bgColor
+
         try:
             if len(banners) > 1:
                 banner_frame = customtkinter.CTkFrame(self, corner_radius=10)
+
                 banner_frame.pack()
 
                 try:
                     banner_image = ImageTk.PhotoImage(
-                        Image.open(io.BytesIO(urlopen(banners[0]["img"]).read())).resize((300, 148),
+                        Image.open(io.BytesIO(urlopen(banners[0]["img"]).read())).resize((300, 169),
                                                                                          Image.LANCZOS))
                     banner_image_label = customtkinter.CTkLabel(banner_frame, image=banner_image, text="")
                     banner_image_label.image = banner_image
                     banner_image_label.pack(pady=10, padx=10)
+
+                    hex_color = get_color_from_image(io.BytesIO(urlopen(banners[0]["img"]).read()))
+                    hex_color = change_color_lightness(hex_color, 19, 17)
+
+                    banner_frame.configure(fg_color=(hex_color, hex_color))
+
                 except Exception:
                     print("Error getting image")
 
@@ -193,7 +248,10 @@ class GenshinPanel(customtkinter.CTkFrame):
                 percentage = get_percentage(start, end)
 
                 banner_progress_bar = customtkinter.CTkProgressBar(banner_frame, orientation='horizontal',
-                                                                   mode='determinate')
+                                                                   mode='determinate',
+                                                                   progress_color=change_color_lightness(hex_color, 50,
+                                                                                                         50),
+                                                                   fg_color=change_color_lightness(hex_color, 12, 60))
                 banner_progress_bar.pack(ipadx=10, pady=2)
                 banner_progress_bar.set((100 - percentage) / 100)
 
@@ -211,6 +269,8 @@ class GenshinPanel(customtkinter.CTkFrame):
             event_frame = customtkinter.CTkFrame(self, corner_radius=10)
             event_frame.pack(fill="x", pady=(10, 0))
 
+            event_frame.configure(fg_color=(hex_color, hex_color))
+
             start = datetime.strptime(event["start"], "%Y-%m-%d %H:%M:%S")
             end = datetime.strptime(event["end"], "%Y-%m-%d %H:%M:%S")
 
@@ -222,7 +282,11 @@ class GenshinPanel(customtkinter.CTkFrame):
                 pady=(5, 0))
 
             progress_bar = customtkinter.CTkProgressBar(event_frame, orientation='horizontal',
-                                                        mode='determinate', width=120)
+                                                        mode='determinate', width=120,
+                                                        progress_color=change_color_lightness(hex_color, 50,
+                                                                                              50),
+                                                        fg_color=change_color_lightness(hex_color, 12, 60))
+
             progress_bar.pack(ipadx=10, pady=2)
             progress_bar.set((100 - percentage) / 100)
 
@@ -259,17 +323,23 @@ class HonkaiPanel(customtkinter.CTkFrame):
 
         # get image from url
         url = banner.img
-        banner_image = ImageTk.PhotoImage(Image.open(io.BytesIO(urlopen(url).read())).resize((300, 148), Image.LANCZOS))
+        banner_image = ImageTk.PhotoImage(Image.open(io.BytesIO(urlopen(url).read())).resize((300, 169), Image.LANCZOS))
         banner_image_label = customtkinter.CTkLabel(banner_frame, image=banner_image, text="")
         banner_image_label.image = banner_image
         banner_image_label.pack(pady=10, padx=10)
+
+        hex_color = get_color_from_image(io.BytesIO(urlopen(url).read()))
+        banner_frame.configure(fg_color=(hex_color, hex_color))
+        progress_bar_hex_color = change_color_lightness(hex_color, 50, 50)
 
         # gets remaining banner time in %
         current_date = datetime.now().replace(microsecond=0)
         percentage = get_percentage(banner.start, banner.end)
 
         # creates the progress bar
-        banner_progress_bar = customtkinter.CTkProgressBar(banner_frame, orientation='horizontal', mode='determinate')
+        banner_progress_bar = customtkinter.CTkProgressBar(banner_frame, orientation='horizontal', mode='determinate',
+                                                           progress_color=progress_bar_hex_color,
+                                                           fg_color=change_color_lightness(hex_color, 12, 60))
         banner_progress_bar.pack(ipadx=10, pady=2)
         banner_progress_bar.set((100 - percentage) / 100)
 
@@ -282,13 +352,16 @@ class HonkaiPanel(customtkinter.CTkFrame):
         root.after(1000, update_progress, banner.start, banner.end,
                    banner_progress_bar)  # updates the bar every hour
         root.after(0, countdown, banner_timer, banner.end)  # updates timer every second
+
         # gets list of the current events
         events = HonkaiWikiScraper.get_events()
 
         for event in events:
             # creates frames for event
-            event_frame = EventFrame(self, event)
-            event_frame.pack(fill="x", pady=(10, 0))
+            if get_secs_until(event.end) >= 0:
+                event_frame = EventFrame(self, event, progress_bar_hex_color)
+                event_frame.configure(fg_color=(hex_color, hex_color))
+                event_frame.pack(fill="x", pady=(10, 0))
 
 
 # Removes the top bar and the icon in the task bar

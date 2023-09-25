@@ -115,3 +115,7 @@ def get_events():
                     events_list.append(new_event)
 
     return events_list
+
+def get_exact_date(url):
+
+    return urls
