@@ -4,6 +4,8 @@ from requests import get
 from bs4 import BeautifulSoup
 from dataclasses import dataclass
 
+from multiprocessing import Pool
+
 URL = "https://honkai-star-rail.fandom.com/wiki/Honkai:_Star_Rail_Wiki"
 
 
@@ -40,13 +42,12 @@ def get_banner():
 
     # find image
     img = results.find("img")
-    src = img.get("data-src")
-    imagen = src.split("scale")
-    imagen_url = imagen[0]
+    img_url = img.get("data-src")
+    img_url.replace("scale-to-width-down/225", "scale-to-width-down/400")
 
     # Create banner object and return it
     banner = Banner(
-        imagen_url,
+        img_url,
         dates[0],
         dates[1]
     )
@@ -54,46 +55,55 @@ def get_banner():
     return banner
 
 
+def search_table(row):
+
+    row = BeautifulSoup(row, 'html.parser')
+
+    # Date pattern to remove it from the name
+    pattern = r'\d{4}-\d{2}-\d{2}'
+    # Gets the url of the image
+    event_img = row.find("img").get("src").split("scale")[0]
+
+    # Gets the name of the event and removes the date from it
+    name = str(row.findAll("a")[1].contents[0])
+    name = re.sub(pattern, '', name)
+
+    # Gets the dates from the inside url
+    url = row.findAll("a")[0].get("href")
+    dates = get_exact_date(url)
+
+    # Saves all events that are in game and have an available date
+    if row.findAll("td")[2].contents[0] == "In-Game" and dates:
+        new_event = Event(
+            name,
+            dates[0],
+            dates[1],
+            event_img
+        )
+
+        # doesn't add the battle pass and the trials
+        if new_event.name != "Nameless Honor" and "Aptitude Showcase" not in new_event.name:
+            return new_event
+
+
 # Returns a list of the current events
 def get_events():
+
     page = get("https://honkai-star-rail.fandom.com/wiki/Events")
     soup = BeautifulSoup(page.content, "html.parser")
 
     events = soup.findAll('table', {
         "style": "width:100%;text-align:center"})
 
-    events_list = []
-
     # Gets the current events and futures events tables and turns them into one
     tables = events[0].find_all('tr', class_=None)[1:] + events[1].find_all('tr', class_=None)[1:]
 
-    # Date pattern to remove it from the name
-    pattern = r'\d{4}-\d{2}-\d{2}'
+    div_texts = [str(row) for row in tables]
 
-    for row in tables:
-        # Gets the url of the image
-        event_img = row.find("img").get("src").split("scale")[0]
+    with Pool() as pool:
+        events_list = pool.map(func=search_table, iterable=div_texts)
 
-        # Gets the name of the event and removes the date from it
-        name = str(row.findAll("a")[1].contents[0])
-        name = re.sub(pattern, '', name)
-
-        # Gets the dates from the inside url
-        url = row.findAll("a")[0].get("href")
-        dates = get_exact_date(url)
-
-        # Saves all events that are in game and have an available date
-        if row.findAll("td")[2].contents[0] == "In-Game" and dates:
-            new_event = Event(
-                name,
-                dates[0],
-                dates[1],
-                event_img
-            )
-
-            # doesn't add the battle pass and the trials
-            if new_event.name != "Nameless Honor" and "Aptitude Showcase" not in new_event.name:
-                events_list.append(new_event)
+    events_list = list(filter(None, events_list))
 
     return events_list
 

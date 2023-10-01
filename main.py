@@ -15,9 +15,6 @@ from ctypes import windll
 
 from colorthief import ColorThief
 
-from threading import Thread
-from multiprocessing import Process
-
 import bar
 
 import HonkaiWikiScraper
@@ -91,7 +88,6 @@ def reset_frames(genshin, honkai):
 
     genshin.forget()
     genshin.destroy()
-
 
     # Adds the genshin panel
     event_frame = GenshinPanel(mainWindow)
@@ -364,32 +360,33 @@ class HonkaiPanel(customtkinter.CTkFrame):
                 event_frame.pack(fill="x", pady=(10, 0))
 
 
-# Removes the top bar and the icon in the task bar
-root.overrideredirect(True)
+if __name__ == '__main__':
+    # Removes the top bar and the icon in the task bar
+    root.overrideredirect(True)
 
-# Adds the custom top bar from bar.py
-top_bar = bar
-top_bar.Bar(root).pack(fill="x")
+    # Adds the custom top bar from bar.py
+    top_bar = bar
+    top_bar.Bar(root).pack(fill="x")
 
-# Crates main frame, the panels will be on
-mainWindow = tkinter.Frame(bg=bgColor)
-mainWindow.pack(pady=(10, 10))
+    # Crates main frame, the panels will be on
+    mainWindow = tkinter.Frame(bg=bgColor)
+    mainWindow.pack(pady=(10, 10))
 
-# Adds the genshin panel
-eventFrame = GenshinPanel(mainWindow)
-eventFrame.grid(column=0, row=0, padx=(10, 5), sticky="n")
+    # Adds the genshin panel
+    eventFrame = GenshinPanel(mainWindow)
+    eventFrame.grid(column=0, row=0, padx=(10, 5), sticky="n")
 
-# Adds the Honkai panel
-ventFrame = HonkaiPanel(mainWindow)
-ventFrame.grid(column=1, row=0, padx=(5, 10), sticky="n")
+    # Adds the Honkai panel
+    ventFrame = HonkaiPanel(mainWindow)
+    ventFrame.grid(column=1, row=0, padx=(5, 10), sticky="n")
 
-reloadButton = top_bar.get_returnButton()
-reloadButton["command"] = lambda genshin=eventFrame, honkai=ventFrame: reset_frames(genshin, honkai)
+    reloadButton = top_bar.get_returnButton()
+    reloadButton["command"] = lambda genshin=eventFrame, honkai=ventFrame: reset_frames(genshin, honkai)
 
-# Show the windows bar icon
-root.after(10, set_app_window)
+    # Show the windows bar icon
+    root.after(10, set_app_window)
 
-update_window_position()
+    update_window_position()
 
-# Start
-root.mainloop()
+    # Start
+    root.mainloop()
