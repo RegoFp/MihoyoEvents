@@ -68,21 +68,22 @@ def search_table(row):
     name = str(row.findAll("a")[1].contents[0])
     name = re.sub(pattern, '', name)
 
-    # Gets the dates from the inside url
-    url = row.findAll("a")[0].get("href")
-    dates = get_exact_date(url)
+    # Only adds relevant events that are in game
+    if name != "Nameless Honor" and "Aptitude Showcase" not in name and row.findAll("td")[2].contents[0] == "In-Game":
+        # Gets the dates from the inside url
+        url = row.findAll("a")[0].get("href")
+        dates = get_exact_date(url)
 
-    # Saves all events that are in game and have an available date
-    if row.findAll("td")[2].contents[0] == "In-Game" and dates:
-        new_event = Event(
-            name,
-            dates[0],
-            dates[1],
-            event_img
-        )
+        # Saves all events have an available date
+        if dates:
+            new_event = Event(
+                name,
+                dates[0],
+                dates[1],
+                event_img
+            )
 
-        # doesn't add the battle pass and the trials
-        if new_event.name != "Nameless Honor" and "Aptitude Showcase" not in new_event.name:
+            # doesn't add the battle pass and the trials
             return new_event
 
 
@@ -100,7 +101,7 @@ def get_events():
 
     div_texts = [str(row) for row in tables]
 
-    with Pool() as pool:
+    with Pool(len(div_texts)) as pool:
         events_list = pool.map(func=search_table, iterable=div_texts)
 
     events_list = list(filter(None, events_list))

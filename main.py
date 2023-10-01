@@ -2,6 +2,7 @@
 import colorsys
 import datetime
 import io
+import time
 import tkinter
 from urllib.request import urlopen
 
@@ -76,8 +77,6 @@ def update_window_position():
     root.update()
     height = windll.user32.GetSystemMetrics(1) - root.winfo_height() - 70
     position = windll.user32.GetSystemMetrics(0) - root.winfo_width() - 30
-    print(height)
-    print(position)
 
     root.geometry("+" + str(position) + "+" + str(height))
 
@@ -132,7 +131,7 @@ def update_progress(start, end, current_bar):
     percentage = get_percentage(start, end)
 
     current_bar.set((100 - percentage) / 100)
-    print(str((100 - percentage) / 100) + " percentage")
+
     if current_bar.get() < 1:
         root.after(3600000, update_progress, start, end, current_bar)
 
@@ -349,6 +348,8 @@ class HonkaiPanel(customtkinter.CTkFrame):
         root.after(1000, update_progress, banner.start, banner.end, banner_progress_bar)
         root.after(0, countdown, banner_timer, banner.end)
 
+        start = time.time()
+
         # gets list of the current events
         events = HonkaiWikiScraper.get_events()
 
@@ -359,6 +360,7 @@ class HonkaiPanel(customtkinter.CTkFrame):
                 event_frame.configure(fg_color=(hex_color, hex_color))
                 event_frame.pack(fill="x", pady=(10, 0))
 
+        print('It took', time.time() - start, 'seconds.')
 
 if __name__ == '__main__':
     # Removes the top bar and the icon in the task bar
