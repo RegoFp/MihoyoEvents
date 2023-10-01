@@ -63,18 +63,19 @@ def get_events():
         "style": "width:100%;text-align:center"})
 
     events_list = []
-    tables = events[0].find_all('tr', class_=None)[1:] + events[1].find_all('tr', class_=None)[1:]
-    # all rows in the table except the head
 
+    # Gets the current events and futures events tables and turns them into one
+    tables = events[0].find_all('tr', class_=None)[1:] + events[1].find_all('tr', class_=None)[1:]
+
+    # Date pattern to remove it from the name
     pattern = r'\d{4}-\d{2}-\d{2}'
 
     for row in tables:
         # Gets the url of the image
         event_img = row.find("img").get("src").split("scale")[0]
 
-        # Gets the name of the event and removes the date from the name
+        # Gets the name of the event and removes the date from it
         name = str(row.findAll("a")[1].contents[0])
-
         name = re.sub(pattern, '', name)
 
         # Gets the dates from the inside url
@@ -91,9 +92,8 @@ def get_events():
             )
 
             # doesn't add the battle pass and the trials
-            if new_event.name != "Nameless Honor":
-                if new_event.name != "Aptitude Showcase":
-                    events_list.append(new_event)
+            if new_event.name != "Nameless Honor" and "Aptitude Showcase" not in new_event.name:
+                events_list.append(new_event)
 
     return events_list
 
@@ -104,6 +104,7 @@ def get_exact_date(url):
 
     url = "https://honkai-star-rail.fandom.com" + url
 
+    # Enters the page to find the url
     page = get(url)
     soup = BeautifulSoup(page.content, "html.parser")
 
@@ -112,6 +113,7 @@ def get_exact_date(url):
 
     dates = data[0].findAll("td")
 
+    # gets the date from the text
     for d in dates:
 
         pattern = r"\d{1,2} \w+, \d{4} \d{2}:\d{2}"

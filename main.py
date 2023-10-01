@@ -15,6 +15,9 @@ from ctypes import windll
 
 from colorthief import ColorThief
 
+from threading import Thread
+from multiprocessing import Process
+
 import bar
 
 import HonkaiWikiScraper
@@ -87,7 +90,8 @@ def reset_frames(genshin, honkai):
     honkai.destroy()
 
     genshin.forget()
-    honkai.destroy()
+    genshin.destroy()
+
 
     # Adds the genshin panel
     event_frame = GenshinPanel(mainWindow)
@@ -207,7 +211,6 @@ class GenshinPanel(customtkinter.CTkFrame):
 
         for event in data:
 
-
             if "start" in event and "end" in event and datetime.strptime(event["start"], "%Y-%m-%d %H:%M:%S") \
                     - timedelta(hours=7) < current_date < datetime.strptime(event["end"], "%Y-%m-%d %H:%M:%S"):
                 if event["type"] == "In-game":
@@ -218,67 +221,51 @@ class GenshinPanel(customtkinter.CTkFrame):
         hex_color = bgColor
 
         try:
-            if len(banners) > 1:
-                banner_frame = customtkinter.CTkFrame(self, corner_radius=10)
+            banner_frame = customtkinter.CTkFrame(self, corner_radius=10)
 
-                banner_frame.pack()
+            banner_frame.pack()
 
-                try:
-                    banner_image = ImageTk.PhotoImage(
-                        Image.open(io.BytesIO(urlopen(banners[0]["img"]).read())).resize((300, 169),
-                                                                                         Image.LANCZOS))
-                    banner_image_label = customtkinter.CTkLabel(banner_frame, image=banner_image, text="")
-                    banner_image_label.image = banner_image
-                    banner_image_label.pack(pady=10, padx=10)
+            try:
+                banner_image = ImageTk.PhotoImage(
+                    Image.open(io.BytesIO(urlopen(banners[0]["img"]).read())).resize((300, 169),
+                                                                                     Image.LANCZOS))
+                banner_image_label = customtkinter.CTkLabel(banner_frame, image=banner_image, text="")
+                banner_image_label.image = banner_image
+                banner_image_label.pack(pady=10, padx=10)
 
-                    hex_color = get_color_from_image(io.BytesIO(urlopen(banners[0]["img"]).read()))
-                    hex_color = change_color_lightness(hex_color, 19, 17)
+                hex_color = get_color_from_image(io.BytesIO(urlopen(banners[0]["img"]).read()))
+                hex_color = change_color_lightness(hex_color, 19, 17)
 
-                    banner_frame.configure(fg_color=(hex_color, hex_color))
+                banner_frame.configure(fg_color=(hex_color, hex_color))
 
-                except Exception:
-                    print("Error getting image")
+            except Exception:
+                print("Error getting image")
 
-                remaining_time = datetime.strptime(banners[0]["end"], "%Y-%m-%d %H:%M:%S") - current_date
+            remaining_time = datetime.strptime(banners[0]["end"], "%Y-%m-%d %H:%M:%S") - current_date
 
-                start = datetime.strptime(banners[0]["start"], "%Y-%m-%d %H:%M:%S")
-                end = datetime.strptime(banners[0]["end"], "%Y-%m-%d %H:%M:%S")
+            start = datetime.strptime(banners[0]["start"], "%Y-%m-%d %H:%M:%S")
+            end = datetime.strptime(banners[0]["end"], "%Y-%m-%d %H:%M:%S")
 
-                percentage = get_percentage(start, end)
+            percentage = get_percentage(start, end)
 
-                banner_progress_bar = customtkinter.CTkProgressBar(banner_frame, orientation='horizontal',
-                                                                   mode='determinate',
-                                                                   progress_color=change_color_lightness(hex_color, 50,
-                                                                                                         50),
-                                                                   fg_color=change_color_lightness(hex_color, 12, 60))
-                banner_progress_bar.pack(ipadx=10, pady=2)
-                banner_progress_bar.set((100 - percentage) / 100)
+            banner_progress_bar = customtkinter.CTkProgressBar(banner_frame, orientation='horizontal',
+                                                               mode='determinate',
+                                                               progress_color=change_color_lightness(hex_color, 50,
+                                                                                                     50),
+                                                               fg_color=change_color_lightness(hex_color, 12, 60))
+            banner_progress_bar.pack(ipadx=10, pady=2)
+            banner_progress_bar.set((100 - percentage) / 100)
 
-                banner_timer = customtkinter.CTkLabel(banner_frame, text=str(remaining_time))
-                banner_timer.pack()
+            banner_timer = customtkinter.CTkLabel(banner_frame, text=str(remaining_time))
+            banner_timer.pack()
 
-                root.after(1000, update_progress, start, end, banner_progress_bar)  # updates the bar every hour
-                root.after(0, countdown, banner_timer, end)  # updates timer every second
-            else:
-                banner_frame = customtkinter.CTkFrame(self, corner_radius=10)
-
-                img = Image.open(r"img\Sunday.png").resize((200, 200), Image.LANCZOS)
-                ph = ImageTk.PhotoImage(img)
-
-                banner_image = customtkinter.CTkLabel(banner_frame, image=ph, text="")
-                banner_image.image = ph
-                banner_image.pack(pady=10, padx=10)
-
-                tkinter.Label(banner_frame, text="Nothing going on right now", bg=frameBgColor, fg="white").pack(
-                    pady=(0, 10))
-
-                banner_frame.pack()
+            root.after(1000, update_progress, start, end, banner_progress_bar)  # updates the bar every hour
+            root.after(0, countdown, banner_timer, end)  # updates timer every second
 
         except Exception:
             print("Error getting banner")
 
         for event in in_game_events:
-
             event_frame = customtkinter.CTkFrame(self, corner_radius=10)
             event_frame.pack(fill="x", pady=(10, 0))
 
