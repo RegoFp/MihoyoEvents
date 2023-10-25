@@ -353,14 +353,15 @@ class HonkaiPanel(customtkinter.CTkFrame):
         # gets list of the current events
         events = HonkaiWikiScraper.get_events()
 
-        for event in events:
-            # creates frames for event
-            if get_secs_until(event.end) >= 0:
-                event_frame = EventFrame(self, event, progress_bar_hex_color)
-                event_frame.configure(fg_color=(hex_color, hex_color))
-                event_frame.pack(fill="x", pady=(10, 0))
+        if events:
+            for event in events:
+                # creates frames for event
+                if get_secs_until(event.end) >= 0:
+                    event_frame = EventFrame(self, event, progress_bar_hex_color)
+                    event_frame.configure(fg_color=(hex_color, hex_color))
+                    event_frame.pack(fill="x", pady=(10, 0))
 
-        print('It took', time.time() - start, 'seconds.')
+            print('It took', time.time() - start, 'seconds.')
 
 if __name__ == '__main__':
     # Removes the top bar and the icon in the task bar

@@ -62,7 +62,13 @@ def search_table(row):
     # Date pattern to remove it from the name
     pattern = r'\d{4}-\d{2}-\d{2}'
     # Gets the url of the image
-    event_img = row.find("img").get("src").split("scale")[0]
+
+    event_img = "https://static.wikia.nocookie.net/houkai-star-rail/images/0/07/Aptitude_Showcase_-_Jingliu%2C_Tingyun%2C_Qingque%2C_Sampo.png/revision/latest/scale-to-width-down/250?cb=20231011230608"
+
+    try:
+        event_img = row.find("img").get("src").split("scale")[0]
+    except:
+        print("fuck")
 
     # Gets the name of the event and removes the date from it
     name = str(row.findAll("a")[1].contents[0])
@@ -96,17 +102,27 @@ def get_events():
     events = soup.findAll('table', {
         "style": "width:100%;text-align:center"})
 
-    # Gets the current events and futures events tables and turns them into one
-    tables = events[0].find_all('tr', class_=None)[1:] + events[1].find_all('tr', class_=None)[1:]
+    try:
+        print("events its not down")
+        # Gets the current events and futures events tables and turns them into one
+        tables = events[0].find_all('tr', class_=None)[1:] + events[1].find_all('tr', class_=None)[1:]
 
-    div_texts = [str(row) for row in tables]
+        div_texts = [str(row) for row in tables]
 
-    with Pool(len(div_texts)) as pool:
-        events_list = pool.map(func=search_table, iterable=div_texts)
+        with Pool(len(div_texts)) as pool:
+            events_list = pool.map(func=search_table, iterable=div_texts)
 
-    events_list = list(filter(None, events_list))
+        events_list = list(filter(None, events_list))
+    except:
+
+        # Gets the events from the main page is case the usual one is down
+        print("The events page is down, info is less reliable")
+        events_list = get_events_in_error()
+
 
     return events_list
+
+
 
 
 def get_exact_date(url):
@@ -135,3 +151,47 @@ def get_exact_date(url):
             times.append(dt)
 
     return times
+
+
+# In case the events page is down, it takes the events from the main page, that is less precise
+def get_events_in_error():
+    page = get("https://honkai-star-rail.fandom.com/wiki/Honkai:_Star_Rail_Wiki")
+    data = BeautifulSoup(page.content, "html.parser")
+
+    events = data.findAll('div', {
+        "class": "hidden wikia-gallery-position-center wikia-gallery-spacing-small wikia-gallery-border-none "
+                 "wikia-gallery-caption-size-large wikia-gallery wikia-gallery-caption-below "
+                 "wikia-gallery-position-left wikia-gallery-spacing-medium wikia-gallery-border-small "
+                 "wikia-gallery-captions-center wikia-gallery-caption-size-medium"})
+
+    events_list = []
+
+    # Every div is an event
+    for div in events[1].findAll("div", style="width:225px"):
+
+        try:
+            # Gets the url of the image
+            event_img = div.find("img").get("data-src").split("scale")[0]
+        except:
+            print("fucj you")
+
+        # Gets the name of the event
+        name = div.find("div", {"class": "gallery-image-wrapper accent"}).find("a").get("title").split("/")[0]
+
+        # Gets the date from the inside url
+        url = div.find("div", {"class": "gallery-image-wrapper accent"}).find("a").get("href")
+        dates = get_exact_date(url)
+
+        new_event = Event(
+            name,
+            dates[0],
+            dates[1],
+            event_img
+        )
+
+        # doesn't add the battle pass and the trials
+        if new_event.name != "Nameless Honor":
+            if new_event.name != "Aptitude Showcase":
+                events_list.append(new_event)
+
+    return events_list
